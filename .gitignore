@@ -27,3 +27,18 @@
 *.i*86
 *.x86_64
 *.hex
+
+# Scrpits gnuplot 
+*.gp
+
+# Emacs 
+*~
+
+# Data
+*.dat
+
+# Image formats
+
+*.png
+*.jpg
+*.pdf

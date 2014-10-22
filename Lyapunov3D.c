@@ -86,7 +86,7 @@ int main()
 
 	      ptm[ipoint] = ptgrid[ipoint];
 	      fprintf(output,"%lf %lf %lf\n", ptgrid[ipoint].lon, ptgrid[ipoint].lat, ptgrid[ipoint].dpt);
-	      tau[ipoint] = 30.0;
+	      tau[ipoint] = DURATION;
 	      for(dir=0; dir<4; dir++)
 		{
 		  delta[ipoint][dir]=0.0;
@@ -100,10 +100,10 @@ int main()
   fclose(output);
 
   tmin = 360.0 * INIT_YEAR + 30.0 * (INIT_MONTH - 1.0) + INIT_DAY;
-  tmax = tmin + 178.0; 
+  tmax = tmin + DURATION; 
 
-  initializeVariablesROMS(np);
-
+  initializeVariablesROMS();
+  initializeVariablesTopology(np);
   Topology( lp, mp, sp);
 
   /* TEST: ------------------------------------------------------*/
@@ -149,7 +149,6 @@ int main()
 		}
 	    }	  
 	}
-
 
       //Calculation of relative distances:
 

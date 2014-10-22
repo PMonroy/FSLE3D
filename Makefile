@@ -1,5 +1,5 @@
 CC = gcc 
-CFLAGS = -O2
+CFLAGS = -O2 -mcmodel=medium
 OBJ = Lyapunov3D.o Topology.o LocateBoxROMS.o Interpolation.o Integration.o 
 
 LIBS = -L/usr/local/netcdf/lib -lnetcdf -lm

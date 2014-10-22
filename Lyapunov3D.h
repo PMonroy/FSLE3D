@@ -1,6 +1,8 @@
 
 #define L 194 // Max index xi of rho points 
+#define LU 193 //Max index xi of u momentum = L-1
 #define M 314 // Max index eta of rho points
+#define MV 313 // Max index eta of v momemtun = M-1
 #define T  30 // How many days in every file
 #define S  32 // Max index s of rho points 
 
@@ -14,9 +16,11 @@
 #define INIT_YEAR  8    // Only two years [8,9]
 #define INIT_MONTH 9    // 1 <= (num. month) <= 12
 #define INIT_DAY   17    // 0 <= (num. days) < 30
+#define DURATION 120
 
-#define DELTA0 0.5 //resolution in degrees
-#define DELTA0_DEPTH 20
+
+#define DELTA0 0.0277 //resolution in degrees
+#define DELTA0_DEPTH 20.0
 #define DELTAMAX 100000.0
 
 #define LON_P_MIN 8.0 // Westernmost longitude
@@ -25,8 +29,8 @@
 #define LAT_P_MIN -30.0 // Southernmost latitude
 #define LAT_P_MAX -20.0 // Northernmost_latitude
 
-#define DPT_P_MIN -300.0 // Southernmost latitude
-#define DPT_P_MAX -300.0 // Northernmost_latitude
+#define DPT_P_MIN -120.0 // Southernmost latitude
+#define DPT_P_MAX -120.0 // Northernmost_latitude
 
 #define NPMAX 5000000
 
@@ -74,7 +78,8 @@ typedef struct{double u, v, w;} vector;
 int ReadDepth(int t0, int ipoint, double dpt[2][2][2][S]);
 int ReadV(int t0, int ipoint, vector vf[2][2][2][2]);
 
-int initializeVariblesROMS(int np);
+int initializeVariablesROMS(void );
+int initializeVariablesTopology(int n);
 
 void Topology( int lp, int mp, int sp);
 void CreateCross(int q);

@@ -4,8 +4,6 @@
 #include <netcdf.h>
 #include "Lyapunov3D.h"
 
-extern point ptm[NPMAX];
-
 int LinearInterpolation(double t, int ipoint, point pt, vector *vint)
 {
   point proms[16];
@@ -15,7 +13,7 @@ int LinearInterpolation(double t, int ipoint, point pt, vector *vint)
   int tau, i, j, k;
   double alpha, beta;
 
-  int t0;
+  int ta;
 
   /* Locate Box: Calculates the vectors vroms[15] and points proms[15] */
     
@@ -51,8 +49,8 @@ int LinearInterpolation(double t, int ipoint, point pt, vector *vint)
     }
 
   /* Time Interpolation: */
-  t0 = (int) (t + 1); 
-  alpha = ((double) t0) - t;  
+  ta = (int) (t + 1); 
+  alpha = ((double) ta) - t;  
   beta = 1.0 - alpha; 
   INTERPOLATION(vroms[0], vroms, 0, alpha, beta);
 

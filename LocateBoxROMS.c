@@ -11,39 +11,63 @@ static double lon[L]; // Longitude(xi) 0 =< xi < L
 static double lat[M]; // Latitude(eta) 0 =< eta < M
 static double mu[M];  // mu(eta) 0 =< eta < M 
 
+static double depth[DURATION][S][M][L]; 
+static double u[DURATION][S][M][LU]; 
+static double v[DURATION][S][MV][L]; 
+static double w[DURATION][S][M][L]; 
+
 static unsigned long xib[NPMAX], etab[NPMAX], sb[NPMAX][2][2][2];
 
+static int t0;
 
-int initializeVariablesROMS(int np)//Esto habrá que cambiarlo
+int initializeVariablesTopology(int n)
 {
-  char file_name_nc[255]; // Name of the file
-  int ncid;                    // The netCDF ID for the file
-  int lon_rho_id, lat_rho_id;  // and data variable
+  int q, i, j, k;
 
-  static size_t start[] = { 0, 0};
-  static size_t count[] = { M, L};
-  static ptrdiff_t stride[] = { 1, 1};  
-
-  int xi, eta, retval; //Loop indexes, and error handling.
-
-  int ipoint, i, j, k;
-
-  for(ipoint=0; ipoint<np; ipoint++)
+  for(q=0; q<n; q++)
     {
-      xib[ipoint] = 0;
-      etab[ipoint] = 0;
+      xib[q] = 0;
+      etab[q] = 0;
       for(i=0; i<2; i++)
 	{
 	  for(j=0; j<2; j++)
 	    {
 	      for(k=0; k<2; k++)
 		{
-		  sb[ipoint][i][j][k] = 0;
+		  sb[q][i][j][k] = 0;
 		}
 	    }
 	}
     }
 
+  return 0;
+}
+
+int initializeVariablesROMS(void )
+{
+  char file_name_nc[255]; // Name of the file
+  int ncid; // The netCDF ID for the file
+  int lon_rho_id, lat_rho_id; // and data variable
+  int depth_id, u_id, v_id, w_id;  
+
+  static size_t start_2d[] = { 0, 0};
+  static size_t count_lon2d[] = { 1, L};
+  static size_t count_lat2d[] = { M, 1};
+  static ptrdiff_t stride_2d[] = { 1, 1};  
+
+  static size_t start_4d[] = { 0, 0, 0, 0};
+  static size_t count_4d[] = { 0, S, M, L};
+  static size_t count_u4d[] = { 0, S, M, LU};
+  static size_t count_v4d[] = { 0, S, MV, L};
+  static ptrdiff_t stride_4d[] = { 1, 1, 1, 1}; 
+  int count0, sum_count0;
+
+  int i, j, k, tau, retval; //Loop indexes, and error handling.
+  
+  date tdate;
+  int t, t1;
+  
+  /* Layer Variables*/
   sprintf(file_name_nc,"%sextract_roms_avg_Y%dM%d.nc.1", PATH, INIT_YEAR, INIT_MONTH);
   
   /* Open the file. NC_NOWRITE tells netCDF we want read-only access
@@ -58,24 +82,74 @@ int initializeVariablesROMS(int np)//Esto habrá que cambiarlo
     ERR(retval);
       
   /* Read the data. */
-
-  count[0] = 1;
-  count[1] = L;
-
-  if ((retval = nc_get_vars_double(ncid, lon_rho_id, start, count, stride, &lon[0])))
+  if ((retval = nc_get_vars_double(ncid, lon_rho_id, start_2d, count_lon2d, stride_2d, &lon[0])))
+    ERR(retval);
+  if ((retval = nc_get_vars_double(ncid, lat_rho_id, start_2d, count_lat2d, stride_2d, &lat[0])))
     ERR(retval);
 
-  count[0] = M;
-  count[1] = 1;
+  /* mu[] variable transformation from lat[]*/   
+  for(j = 0; j < M; j++)
+    mu[j] = LAT_TO_MU(lat[j]);
 
-  if ((retval = nc_get_vars_double(ncid, lat_rho_id, start, count, stride, &lat[0])))
-    ERR(retval);
-    
-  for(eta = 0; eta < M; eta++)
-      mu[eta] = LAT_TO_MU(lat[eta]);
-
+  /* Close the file, freeing all resources. */
   if ((retval = nc_close(ncid)))
-	    ERR(retval);
+    ERR(retval);
+
+  /* POINTS VARIBLES */
+  
+  t0  = (INIT_YEAR*360)+((INIT_MONTH-1)*30)+INIT_DAY;
+  t1 = t0 + DURATION;
+
+  t = t0;
+  sum_count0=0;
+  while(t<t1)
+    {
+      TIME_TO_DATE(tdate,t);
+ 
+      if(tdate.day!=0)
+	count0=T-INIT_DAY;
+      else
+	count0=T;
+
+      if((t+count0)>t1)
+	count0=t1-t;
+
+      count_4d[0]=count_u4d[0]=count_v4d[0]=count0;
+      start_4d[0]=tdate.day;
+        
+      /* Open the file. NC_NOWRITE tells netCDF we want read-only access
+       * to the file.*/
+      sprintf(file_name_nc,"%sextract_roms_avg_Y%dM%d.nc.1", PATH, tdate.year, tdate.month);
+      if ((retval = nc_open(file_name_nc, NC_NOWRITE, &ncid)))
+	ERR(retval);
+
+      /* The netCDF ID for the data variable */
+      if ((retval = nc_inq_varid(ncid, "depth", &depth_id)))
+	ERR(retval);
+      if ((retval = nc_inq_varid(ncid, "u", &u_id)))
+	ERR(retval);
+      if ((retval = nc_inq_varid(ncid, "v", &v_id)))
+	ERR(retval);
+      if ((retval = nc_inq_varid(ncid, "w", &w_id)))
+	ERR(retval);
+      
+      /* Read the variables*/
+      if ((retval = nc_get_vars_double(ncid, depth_id, start_4d, count_4d, stride_4d, &depth[sum_count0][0][0][0])))
+	ERR(retval);
+      if ((retval = nc_get_vars_double(ncid, u_id, start_4d, count_u4d, stride_4d, &u[sum_count0][0][0][0])))
+	  ERR(retval);
+      if ((retval = nc_get_vars_double(ncid, v_id, start_4d, count_v4d, stride_4d, &v[sum_count0][0][0][0])))
+	ERR(retval);
+      if ((retval = nc_get_vars_double(ncid, w_id, start_4d, count_4d, stride_4d, &w[sum_count0][0][0][0])))
+	ERR(retval);
+  
+      /* Close the file, freeing all resources. */
+      if ((retval = nc_close(ncid)))
+	ERR(retval);
+
+      t += count0;
+      sum_count0 += count0;
+    }
 
   return 0;
 }
@@ -96,7 +170,6 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
   int i,j,k,tau;
 
   int index;
-  vector vroms_array[2][2][2][2];
 
   int contw;
   /* Localizamos xib y etab */
@@ -104,7 +177,6 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
   llon = lon - 1;
   xib_1offset = xib[ipoint] + 1;
   hunt(llon, L, pt.lon, &xib_1offset);
-
   if(xib_1offset == 0 || xib_1offset == L)
     return 1;
   else
@@ -113,7 +185,6 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
   mmu = mu - 1;
   etab_1offset = etab[ipoint] + 1;
   hunt(mmu, M, pt.mu, &etab_1offset);
-
   if(etab_1offset == 0 || etab_1offset == M)
     return 1;
   else
@@ -121,8 +192,21 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
 
   /* Leemos las columnas de profundidad */
   
-  troms = (int) t;
-  ReadDepth(troms, ipoint, dpt);
+  troms = ((int) t) - t0;
+
+  for(tau = 0; tau < 2; tau++)
+    {
+      for(i = 0; i < 2; i++)
+	{
+	  for(j = 0; j < 2; j++)
+	    {
+	      for(k = 0; k < S; k++)
+		{
+		  dpt[tau][i][j][k] = depth[troms + tau][k][etab[ipoint]+j][xib[ipoint]+i];
+		}
+	    }
+	}
+    }
  
   /* Localizamos la profundidad */
 
@@ -134,8 +218,7 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
 	    {
 	      ddpt = dpt[tau][i][j] - 1;
 	      sb_1offset = sb[ipoint][tau][i][j] + 1;
-	      hunt(ddpt, S, pt.dpt, &sb_1offset);
-	     
+	      hunt(ddpt, S, pt.dpt, &sb_1offset);	     
 	      if(sb_1offset == 0 || sb_1offset == S)
 		return 1;
 	      else
@@ -146,9 +229,6 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
 	}
     }
 
-  /* Leemos las velocidades*/
-
-  ReadV(troms, ipoint, vroms_array);
 
   /* Vectors and points with only one int index*/
 
@@ -168,7 +248,9 @@ int LocateBox(double t, int ipoint, point pt, point proms[16], vector vroms[16])
 		  proms[index].mu = mu[eta];
 		  proms[index].dpt = dpt[tau][i][j][s];
 
-		  vroms[index]=vroms_array[tau][i][j][k];
+		  vroms[index].u=(u[troms+tau][s][eta][xi-(xi==(L-1))] + u[troms+tau][s][eta][xi-(xi!=0)])/2.0;
+		  vroms[index].v=(v[troms+tau][s][eta-(eta==(M-1))][xi] + v[troms+tau][s][eta-(eta!=0)][xi])/2.0 ;
+		  vroms[index].w=w[troms+tau][s][eta][xi];
 		  if(vroms[index].w==0)
 		    contw++;
 		  index++; 
