@@ -21,6 +21,7 @@
 *.dylib
 
 # Executables
+fsle3d
 *.exe
 *.out
 *.app
@@ -38,7 +39,7 @@
 *.dat
 
 # Image formats
-
 *.png
 *.jpg
 *.pdf
+*.vtk

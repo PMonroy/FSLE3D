@@ -103,7 +103,7 @@ int main()
   tmax = tmin + DURATION; 
 
   initializeVariablesROMS();
-  initializeVariablesTopology(np);
+  InitializeVariablesLocate(np);
   Topology( lp, mp, sp);
 
   /* TEST: ------------------------------------------------------*/
@@ -183,7 +183,6 @@ int main()
 		  if(delta[q][dir] > deltamax)
 		    deltamax = delta[q][dir];
 		}
-
 	      //si es mayor que deltamax: actualiza degrees, tau y delta[]
 	      if(deltamax > DELTAMAX)
 		{

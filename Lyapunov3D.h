@@ -79,7 +79,7 @@ int ReadDepth(int t0, int ipoint, double dpt[2][2][2][S]);
 int ReadV(int t0, int ipoint, vector vf[2][2][2][2]);
 
 int initializeVariablesROMS(void );
-int initializeVariablesTopology(int n);
+int InitializeVariablesLocate(int n);
 
 void Topology( int lp, int mp, int sp);
 void CreateCross(int q);

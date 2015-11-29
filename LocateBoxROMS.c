@@ -6,7 +6,6 @@
 
 extern point ptm[NPMAX];
 
-/* Longitude and latitude of rho-points */
 static double lon[L]; // Longitude(xi) 0 =< xi < L
 static double lat[M]; // Latitude(eta) 0 =< eta < M
 static double mu[M];  // mu(eta) 0 =< eta < M 
@@ -20,7 +19,7 @@ static unsigned long xib[NPMAX], etab[NPMAX], sb[NPMAX][2][2][2];
 
 static int t0;
 
-int initializeVariablesTopology(int n)
+int InitializeVariablesLocate(int n)
 {
   int q, i, j, k;
 
